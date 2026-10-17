@@ -9,38 +9,70 @@ regressionUI <- function(id) {
       
       h2("Linear Regression"),
       
-      selectInput(
-        ns("x_column"),
-        "Independent Variable (X)",
-        choices = NULL
-      ),
-      
-      selectInput(
-        ns("y_column"),
-        "Dependent Variable (Y)",
-        choices = NULL
-      ),
-      
-      actionButton(
-        ns("run"),
-        "Run Regression"
+      fluidRow(
+        
+        column(
+          4,
+          
+          selectInput(
+            ns("x_column"),
+            "Independent Variable (X)",
+            choices = NULL
+          ),
+          
+          selectInput(
+            ns("y_column"),
+            "Dependent Variable (Y)",
+            choices = NULL
+          ),
+          
+          actionButton(
+            ns("run"),
+            "Run Regression",
+            class = "btn-primary"
+          )
+        ),
+        
+        column(
+          8,
+          
+          h3("Model Result"),
+          
+          textOutput(
+            ns("equation")
+          ),
+          
+          textOutput(
+            ns("r_squared")
+          )
+        )
       ),
       
       hr(),
       
-      h3("Regression Results"),
-      
-      verbatimTextOutput(
-        ns("result")
-      ),
-      
       plotOutput(
         ns("plot"),
-        height = "450px"
+        height = "550px"
+      ),
+      
+      hr(),
+      
+      tags$details(
+        
+        tags$summary(
+          "Show Full Regression Output"
+        ),
+        
+        br(),
+        
+        verbatimTextOutput(
+          ns("full_result")
+        )
       )
     )
   )
 }
+
 
 regressionServer <- function(id, current_data) {
   
@@ -80,6 +112,7 @@ regressionServer <- function(id, current_data) {
         
         data <- current_data()
         
+        
         formula <- as.formula(
           paste(
             input$y_column,
@@ -87,6 +120,7 @@ regressionServer <- function(id, current_data) {
             input$x_column
           )
         )
+        
         
         lm(
           formula,
@@ -96,7 +130,43 @@ regressionServer <- function(id, current_data) {
     )
     
     
-    output$result <- renderPrint({
+    output$equation <- renderText({
+      
+      req(model())
+      
+      coefficients <- coef(
+        model()
+      )
+      
+      paste0(
+        "Equation: ",
+        input$y_column,
+        " = ",
+        round(coefficients[1], 3),
+        " + ",
+        round(coefficients[2], 3),
+        " × ",
+        input$x_column
+      )
+    })
+    
+    
+    output$r_squared <- renderText({
+      
+      req(model())
+      
+      value <- summary(
+        model()
+      )$r.squared
+      
+      paste(
+        "R² =",
+        round(value, 3)
+      )
+    })
+    
+    
+    output$full_result <- renderPrint({
       
       req(model())
       
@@ -112,6 +182,11 @@ regressionServer <- function(id, current_data) {
       
       data <- current_data()
       
+      r2 <- summary(
+        model()
+      )$r.squared
+      
+      
       ggplot(
         data,
         aes(
@@ -119,15 +194,50 @@ regressionServer <- function(id, current_data) {
           y = .data[[input$y_column]]
         )
       ) +
-        geom_point() +
+        
+        geom_point(
+          size = 4,
+          alpha = 0.7,
+          color = "#2C7FB8"
+        ) +
+        
         geom_smooth(
           method = "lm",
-          se = FALSE
+          se = TRUE,
+          linewidth = 1.5,
+          color = "#D95F02",
+          fill = "#FDD0A2"
         ) +
+        
         labs(
-          title = "Linear Regression",
+          
+          title = "Linear Regression Model",
+          
+          subtitle = paste(
+            input$y_column,
+            "predicted using",
+            input$x_column,
+            "| R² =",
+            round(r2, 3)
+          ),
+          
           x = input$x_column,
-          y = input$y_column
+          
+          y = input$y_column,
+          
+          caption =
+            "Blue points = observations | Orange line = regression model"
+        ) +
+        
+        theme_minimal(
+          base_size = 14
+        ) +
+        
+        theme(
+          plot.title = element_text(
+            face = "bold",
+            size = 18
+          )
         )
     })
     

@@ -14,6 +14,7 @@ source("modules/mod_visualization.R")
 source("modules/mod_correlation.R")
 source("modules/mod_regression.R")
 source("modules/mod_testing.R")
+source("modules/mod_export.R")
 
 
 # -----------------------------
@@ -40,7 +41,9 @@ ui <- navbarPage(
   
   regressionUI("regression"),
   
-  testingUI("testing")
+  testingUI("testing"),
+  
+  exportUI("export")
 )
 
 
@@ -50,10 +53,8 @@ ui <- navbarPage(
 
 server <- function(input, output, session) {
   
-  # Original uploaded dataset
   original_data <- reactiveVal(NULL)
   
-  # Current working dataset
   current_data <- reactiveVal(NULL)
   
   
@@ -109,6 +110,12 @@ server <- function(input, output, session) {
   
   testingServer(
     "testing",
+    current_data
+  )
+  
+  
+  exportServer(
+    "export",
     current_data
   )
 }
